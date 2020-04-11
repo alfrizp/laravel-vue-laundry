@@ -15,9 +15,9 @@ class User extends Authenticatable
      *
      * @var array
      */
-    protected $fillable = [
-        'name', 'email', 'password', 'api_token'
-    ];
+    // protected $fillable = [
+    //     'name', 'email', 'password', 'api_token'
+    // ];
 
     /**
      * The attributes that are mass assignable.
@@ -43,4 +43,14 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
+
+    public function scopeCourier($query)
+    {
+        return $query->where('role', 3);
+    }
 }

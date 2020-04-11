@@ -9,7 +9,7 @@
             </div>
             <div class="panel-body">
                 <b-table striped hover bordered :items="outlets.data" :fields="fields" show-empty>
-                    <template slot="status" slot-scope="row">
+                    <template v-slot:cell(status)="row">
                         <span class="label label-success" v-if="row.item.status == 1">Active</span>
                         <span class="label label-default" v-else>Inactive</span>
                     </template>
