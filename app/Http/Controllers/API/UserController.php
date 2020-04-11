@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use DB;
 use File;
+use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
+
+use App\Http\Controllers\Controller;
 
 use App\User;
 
@@ -47,7 +49,7 @@ class UserController extends Controller
                 $file->storeAs('public/couriers', $name);
             }
             //BUAT DATA BARUNYA KE DATABASE
-            User::create([
+            $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => $request->password,
@@ -56,6 +58,7 @@ class UserController extends Controller
                 'outlet_id' => $request->outlet_id,
                 'role' => 3
             ]);
+            $user->assignRole('courier'); //TAMBAHKAN BAGIAN UNTUK MENAMBAHKAN ROLE COURIER
             DB::commit();
             return response()->json(['status' => 'success'], 200);
         } catch (\Exception $e) {
@@ -117,5 +120,25 @@ class UserController extends Controller
         $user->delete(); //MENGHAPUS DATANYA
 
         return response()->json(['status' => 'success']);
+    }
+
+    public function userLists()
+    {
+        $user = User::where('role', '!=', 3)->get();
+        return new UserCollection($user);
+    }
+
+    public function getUserLogin()
+    {
+        $user = request()->user(); //MENGAMBIL USER YANG SEDANG LOGIN
+        $permissions = [];
+        foreach (Permission::all() as $permission) {
+            //JIKA USER YANG SEDANG LOGIN PUNYA PERMISSION TERKAIT
+            if (request()->user()->can($permission->name)) {
+                $permissions[] = $permission->name; //MAKA PERMISSION TERSEBUT DITAMBAHKAN
+            }
+        }
+        $user['permission'] = $permissions; //PERMISSION YANG DIMILIKI DIMASUKKAN KE DALAM DATA USER.
+        return response()->json(['status' => 'success', 'data' => $user]);
     }
 }
