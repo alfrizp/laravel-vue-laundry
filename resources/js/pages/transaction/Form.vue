@@ -2,7 +2,7 @@
     <div class="row">
         <div class="col-md-6">
             <div class="form-group" :class="{ 'has-error': errors.customer_id }">
-                <label for="">Customer</label>
+                <label for="">Customer <sup><a href="javascript:void(0)" @click="newCustomer">New Customer</a></sup></label>
 
                 <!-- KITA AKAN MENGGUNAKAN V-SELECT DIMANA DATANYA AKAN DILOAD KETIKA KEYWORD PENCARIAN DITEMUKAN -->
                 <v-select :options="customers.data"
@@ -50,6 +50,11 @@
                     <td>{{ transactions.customer_id.point }}</td>
                 </tr>
             </table>
+        </div>
+        <div class="col-md-6" v-if="isForm">
+            <h4>Add New Customer</h4>
+            <form-customer />
+            <button class="btn btn-primary btn-s" @click="addCustomer">Save</button>
         </div>
         <div class="col-md-12">
             <hr>
@@ -115,6 +120,7 @@ import { mapState, mapMutations, mapActions } from 'vuex'
 import vSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css'
 import _ from 'lodash'
+import FormCustomer from '../customers/Form.vue'
 
 export default {
     name: 'FormTransaction',
@@ -146,6 +152,15 @@ export default {
     },
     methods: {
         ...mapActions('transaction', ['getCustomers', 'getProducts', 'createTransaction']),
+        ...mapActions('customer', ['submitCustomer']), //KITA GUNAKAN FUNGSI YANG ADA DI MODULE CUSTOMER UNTUK MENGIRIM PERMINTAAN KE BACKEND
+        addCustomer() {
+        //JALANKAN FUNGSI submitCustomer YANG MERUPAKAN ACTIONS DARI MODULE CUSTOMER
+            this.submitCustomer().then((res) => {
+                //APABILA BERHASIL, MAKA SET DATA CUSTOMER_ID AGAR AUTO SELECT PADA BAGIAN SELECT CUSTOMER
+                this.transactions.customer_id = res.data
+                this.isForm = false //SET KEMBALI JADI FALSE AGAR FORM TERTUTUP
+            })
+        },
         //METHOD INI AKAN BERJALAN KETIKA PENCARIAN DATA CUSTOMER PADA V-SELECT DIATAS
         onSearch(search, loading) {
             //KITA AKAN ME-REQUEST DATA CUSTOMER BERDASARKAN KEYWORD YG DIMINTA
@@ -193,10 +208,14 @@ export default {
             this.isSuccess = false
             //MENGIRIM PERMINTAAN KE SERVER UNTUK MENYIMPAN DATA TRANSAKSI
             this.createTransaction(this.transactions).then(() => this.isSuccess = true)
-        }
+        },
+        newCustomer() {
+            this.isForm = true //MENGUBAH VALUE isForm MENJADI TRUE
+        },
     },
     components: {
-        vSelect
+        vSelect,
+        'form-customer': FormCustomer //TAMBAHKAN BAGIAN INI
     }
 }
 </script>
