@@ -13,6 +13,9 @@
                                 <label for="">Tagihan</label>
                                 <input type="text" :value="transaction.amount" class="form-control" readonly>
                             </div>
+                            <div class="form-group" v-if="transaction.customer && transaction.customer.deposit >= transaction.amount">
+                                <input type="checkbox" v-model="via_deposit"> Bayar Via Deposit?
+                            </div>
                             <div class="form-group">
                                 <label for="">Jumlah Bayar</label>
                                 <input type="number" class="form-control" v-model="amount">
@@ -144,7 +147,21 @@
                 customer_change: false,
                 loading: false,
                 payment_message: null,
-                payment_success: false
+                payment_success: false,
+                via_deposit: false
+            }
+        },
+        watch: {
+            //JIKA VALUE NYA BERUBAH
+            via_deposit() {
+                //CEK JIKA TRUE
+                if (this.via_deposit) {
+                    //MAKA TOTAL PEMBAYARAN DISET SEJUMLAH TAGIHAN
+                    this.amount = this.transaction.amount
+                } else {
+                    //JIKA FALSE MAKA DI SET NULL KEMBALI
+                    this.amount = null
+                }
             }
         },
         computed: {
@@ -154,10 +171,22 @@
             }),
             //TAMBAHKAN KEDUA CODE DIBAWAH INI
             isCustomerChange() {
-                return this.amount > this.transaction.amount  //BERNILAI TRUE/FALSE SESUAI KONDISINYA
+                //JIKA VIA DEPOSIT TRUE
+                if (!this.via_deposit) {
+                    //MAKA JALANKAN KONDISI SEBELUMNYA
+                    return this.amount > this.transaction.amount
+                }
+                //SELAIN ITU NILAINYA false
+                return false
             },
             customerChangeAmount() {
-                return parseInt(this.amount - this.transaction.amount) //SELISIH ANTARA TAGIHAN DAN JUMLAH YANG DIBAYARKAN
+                //JIKA VIA_DEPOSIT TRUE
+                if (!this.via_deposit) {
+                    //MAKA VALUENYA ADALAH HASIL PENGURANGAN JUMLAH BAYAR - TOTAL TAGIHAN
+                    return parseInt(this.amount - this.transaction.amount)
+                }
+                //DEFAULT NILAINYA ADALAH 0
+                return 0
             }
         },
         methods: {
@@ -178,20 +207,26 @@
                     //DENGAN MENGIRIMKAN PARAMETER BERIKUT
                     transaction_id: this.$route.params.id,
                     amount: this.amount,
-                    customer_change: this.customer_change
+                    customer_change: this.customer_change,
+                    via_deposit: this.via_deposit
                 }).then(() => {
-                    //SET BAHWA PAYMENT BERHASIL, DIGUNAKAN OLEH ALERT NNTINYA
-                    this.payment_success = true
-                    setTimeout(() => {
-                        //SET LOADING JADI FALSE KEMBALI
+                    //JIKA PEMBAYARAN BERHASIL
+                    if (res.status == 'success') {
+                        //ALERT DAN SEMUA VARIABLE DI RESET
+                        this.payment_success = true
+                        setTimeout(() => {
+                            this.loading = false
+                            this.amount = null,
+                            this.customer_change = false,
+                            this.payment_message = null
+                            this.via_deposit = false
+                        }, 500)
+                        this.detailTransaction(this.$route.params.id)
+                    } else {
+                        //JIKA GAGAL MAKA TAMPILKAN ALERT GAGAL
                         this.loading = false
-                        //SET SEMUA VARIABLE JADI KOSONG
-                        this.amount = null,
-                        this.customer_change = false,
-                        this.payment_message = null
-                    }, 500)
-                    //AMBIL DATA TRANSAKSI TERBARU
-                    this.detailTransaction(this.$route.params.id)
+                        alert(res.data)
+                    }
                 })
             },
             //KETIKA TOMBOL MASING-MASING PESANAN DIKLIK
